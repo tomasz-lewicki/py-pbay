@@ -39,7 +39,7 @@ class PBayParser(serial.threaded.LineReader):
     def handle_line(self, data):
         keyvalue = self._p.findall(data)
         for kv in keyvalue:
-            self.values[kv[0:3]] = kv[5:]
+            self.values[kv[0:3]] = kv[4:]
         
 
 if __name__ == '__main__':
