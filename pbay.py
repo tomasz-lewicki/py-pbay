@@ -22,13 +22,12 @@ class PBay(Thread):
 
         # configure logger
         self._log = logging.getLogger('pbay_driver')
-        self._log.setLevel(logging.DEBUG)
         # create file handler which logs even debug messages
         fh = logging.FileHandler(log_filename)
         fh.setLevel(logging.DEBUG)
         # create console handler with a higher log level
         ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+        ch.setLevel(logging.DEBUG)
         # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
@@ -44,7 +43,7 @@ class PBay(Thread):
                 l = str(self._s.readline())
                 self._log.debug("Recived a line: " + l)
                 self.parse_and_update_state(l)
-                self._log.info("Updated values: {}".format(self.measurements))
+                self._log.info("Updated values")
             except SerialException as e:
                 self._log.critical("Device disconnected with Exception: {}".format(e))
                 self._is_running = False
