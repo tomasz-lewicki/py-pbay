@@ -22,6 +22,7 @@ class PBay(Thread):
 
         # configure logger
         self._log = logging.getLogger('pbay_driver')
+        self._log.setLevel(logging.INFO)
         # create file handler which logs even debug messages
         fh = logging.FileHandler(log_filename)
         fh.setLevel(logging.DEBUG)
