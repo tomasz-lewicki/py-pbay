@@ -40,16 +40,21 @@ class PBay(Thread):
     
     def run(self):
         while self._is_running:
-            l = str(self._s.readline())
-            self._log.debug("Recived a line: " + l)
-            self.parse_line(l)
-            self._log.info("Updated values: {}".format(self.measurements))
+            try:
+                l = str(self._s.readline())
+                self._log.debug("Recived a line: " + l)
+                self.parse_and_update_state(l)
+                self._log.info("Updated values: {}".format(self.measurements))
+            except SerialException as e:
+                self._log.critical("Device disconnected with Exception: {}".format(e))
+                self._is_running = False
+
             #Wrap it in try except once you know how to handle these
             #try:
             #except SerialException as e: #TODO: add error handling
             #    self._log.error(e) 
 
-    def parse_line(self, data):
+    def parse_and_update_state(self, data):
         keyvalue_pairs = self._p.findall(data)
         for kv in keyvalue_pairs:
             key = kv[0:3]
@@ -70,8 +75,6 @@ class PBay(Thread):
         return self
 
     def __exit__(self, etype, value, traceback):
-        print("Exit called")
-        print(etype,value,traceback)
         self._is_running = False
         self.join() #TODO: is this right?
         self._s.close()
@@ -89,8 +92,8 @@ if __name__ == '__main__':
         if csvfile.readline() != csvheader:
             csvfile.write(csvheader)
 
-    with PBay('/dev/ttyUSB0', 'log.txt') as sensor:
-        while(True):
+    with PBay('/dev/ttyUSB1', 'log.txt') as sensor:
+        while(sensor._is_running):
             with open(csvfilename, 'a') as csvfile:
 
                 csvfile.write(
