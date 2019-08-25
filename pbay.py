@@ -19,7 +19,7 @@ class PBay(Thread):
         super(PBay, self).__init__()
         self.measurements = INIT_VALUES
         self._s = serial.Serial(port=serial_address, baudrate=115200, timeout=5) 
-        self._p = re.compile('-?[A-Z][A-Z|0-9][A-Z|0-9]{1}=[0-9|A-Z]+') #BUG: doesn't handle negative SO2
+        self._p = re.compile('-?[A-Z][A-Z|0-9][A-Z|0-9]{1}=-?[0-9|A-Z]+') #BUG: doesn't handle negative SO2
 
         # configure logger
         self._log = logging.getLogger('pbay_driver')
