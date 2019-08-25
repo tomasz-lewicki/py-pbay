@@ -2,6 +2,7 @@ import re
 import time
 import serial #pip3 install pyserial
 import logging
+import sys
 from serial.serialutil import SerialException
 from threading import Thread
 
@@ -84,15 +85,17 @@ class PBay(Thread):
 
 
 if __name__ == '__main__':
-
+    #Usage example: python3 pbay.py /dev/ttyUSB1
     csvfilename = 'readings.csv'
     csvheader = 'timestamp,CMO,H2S,IAQ,IRR,OZO,SO2,NO2\n'
+    devname = sys.argv[-1]
 
     with open(csvfilename, 'a+') as csvfile:
         if csvfile.readline() != csvheader:
             csvfile.write(csvheader)
+    
 
-    with PBay('/dev/ttyUSB1', 'log.txt') as sensor:
+    with PBay(devname, 'log.txt') as sensor:
         while(sensor._is_running):
             with open(csvfilename, 'a') as csvfile:
 
