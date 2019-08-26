@@ -5,11 +5,11 @@ from pbay import PBay, INIT_VALUES
 if __name__ == '__main__':
     #Usage example: python3 pbay.py /dev/ttyUSB1
     csvfilename = 'readings2.csv'
-    csvheader = 
     devname = sys.argv[-1]
 
     #write header
     with open(csvfilename, 'a+') as csvfile:
+        csvfile.write('timestamp,')
         for k in INIT_VALUES.keys():
             csvfile.write(k+',')
         csvfile.write('\n')
