@@ -1,5 +1,6 @@
 import sys
 import time
+import math
 from collections import OrderedDict
 import re
 import serial #pip3 install pyserial
@@ -11,7 +12,7 @@ INIT_VALUES = OrderedDict({
     #Board address, sequence number
     'BAD': None, 'SQN': None,
 
-    # ADC counts from SPEC sensors
+    #sensor currents
     'CMO': None, 'SO2': None, 'NO2': None, 'H2S': None,
     'OZO': None, 'IAQ': None, 'IRR': None,
 
@@ -33,12 +34,37 @@ INIT_VALUES = OrderedDict({
     'SIR': None, 'SUV': None, 'SVL': None, 
 })
 
+class Gas(object):
+    def __init__(self, name, calib_curr, calib_temp, temp_source, nanoamps_per_ppm, coef):
+        self.name = name
+        self.calib_curr = calib_curr
+        self.calib_temp = calib_temp
+        self.temp_source = temp_source
+        self.picoamps_per_ppm = 1000 * nanoamps_per_ppm
+        self.coef = coef #TODO:better name?
+    def __str__(self):
+        return self.name
+
+# gas_list = [Gas(name='CMO', calib_curr=9851, calib_temp=29.20, nanoamps_per_ppm=4.75, coef=12),
+#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
+#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
+#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
+#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
+#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
+#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=)]
+
 class PBay(Thread):
-    def __init__(self, serial_address, log_filename):
+    def __init__(self, serial_address, log_filename, gas_list):
         super(PBay, self).__init__()
-        self.measurements = INIT_VALUES
+        #initialize state
+        self._raw = INIT_VALUES
+        self._values = {}
+        self._gases = gas_list
+        self._is_running = False
+
+        #initialize peripherals
         self._s = serial.Serial(port=serial_address, baudrate=115200, timeout=5) 
-        self._p = re.compile('-?[A-Z][A-Z|0-9][A-Z|0-9]{1}=-?[0-9|A-Z]+') #BUG: doesn't handle negative SO2
+        self._p = re.compile('-?[A-Z][A-Z|0-9][A-Z|0-9]{1}=-?[0-9|A-Z]+')
 
         # configure logger
         self._log = logging.getLogger('pbay_driver')
@@ -57,42 +83,68 @@ class PBay(Thread):
         self._log.addHandler(fh)
         self._log.addHandler(ch)
 
+    def __enter__(self):
+
+        #wait for first batch of _raw to come
+        while None in self._raw.values():
+            l = self._read_sensor()
+            kv = self._parse(l)
+            self._update_state(kv)
+
+            missing_values = [k for k, v in self._raw.items() if v == None]
+            self._log.info("Waiting for _raw... Still waiting for: {}".format(missing_values)) 
+
+        self._log.info("Got all the parameters. Starting.")
+        self._calculate_values()
+        self._is_running = True
+        self.start()
+        return self
     
     def run(self):
         while self._is_running:
             try:
-                l = str(self._s.readline())
-                self._log.debug("Recived a line: " + l)
-                self.parse_and_update_state(l)
-                self._log.info("Updated values")
+                l = self._read_sensor()
+                kv = self._parse(l)
+                self._update_state(kv)
+                self._calculate_values()
             except SerialException as e:
                 self._log.critical("Device disconnected with Exception: {}".format(e))
                 self._is_running = False
+                #TODO: add some better error handling? Chances are that it will reconnect and change /dev/tty*
+    
+    def _read_sensor(self):
+        l = str(self._s.readline())
+        self._log.debug("Recived a line: " + l)
+        return l
 
-            #Wrap it in try except once you know how to handle these
-            #try:
-            #except SerialException as e: #TODO: add error handling
-            #    self._log.error(e) 
-
-    def parse_and_update_state(self, data):
+    def _parse(self, data):
         keyvalue_pairs = self._p.findall(data)
+        return keyvalue_pairs
+    
+    def _update_state(self, keyvalue_pairs):
         for kv in keyvalue_pairs:
             key = kv[0:3]
             if key in INIT_VALUES.keys():
-                self.measurements[key] = kv[4:]
+                if key == 'BAD' or key == 'SQN':
+                    self._raw[key] = kv[4:]
+                else: self._raw[key] = float(kv[4:])
             else:
                 self._log.warning("Received an erronous key from the device: " + key)
-        
-    def __enter__(self):
-        self._is_running = True
-        self.start()
-        while None in self.measurements.values():
-            #wait for first batch of measurements to come
-            missing_values = [k for k, v in self.measurements.items() if v == None]
-            self._log.info("waiting for measurements... Still waiting for: {}".format(missing_values)) 
-            time.sleep(1)
-        self._log.info("Got all the measurements. Starting.") 
-        return self
+
+    def _calculate_values(self):
+        for g in self._gases:
+            deltaT = self._raw[g.temp_source]/100 - g.calib_temp
+            I_net =  self._raw[g.name] - g.calib_temp * pow(math.e, deltaT/g.coef)
+            self._values[g.name] = I_net/g.picoamps_per_ppm
+        self._log.debug("Calculated values" + str(self._values))
+
+
+    def __getattr__(self, attr):
+        gas_names = list(map(str, self._gases))
+        if attr not in gas_names:
+            raise AttributeError('{} has no attribute {}. Maybe one of: {}?'.format(self, attr, gas_names))
+        else:
+            return self._values[attr]
 
     def __exit__(self, etype, value, traceback):
         self._is_running = False
