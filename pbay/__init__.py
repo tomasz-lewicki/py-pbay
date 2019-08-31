@@ -36,24 +36,16 @@ INIT_VALUES = OrderedDict({
 
 
 class Gas(object):
-    def __init__(self, name, calib_curr, calib_temp, temp_source, nanoamps_per_ppm, coef):
+    def __init__(self, name, calib_curr, calib_temp, temp_source, nanoamps_per_ppm, t_const):
         self.name = name
         self.calib_curr = calib_curr
         self.calib_temp = calib_temp
         self.temp_source = temp_source
         self.picoamps_per_ppm = 1000 * nanoamps_per_ppm
-        self.coef = coef  # TODO:better name?
+        self.t_const = t_const 
 
     def __str__(self):
         return self.name
-
-# gas_list = [Gas(name='CMO', calib_curr=9851, calib_temp=29.20, nanoamps_per_ppm=4.75, coef=12),
-#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
-#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
-#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
-#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
-#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=),
-#             Gas(name=, calib_curr=, calib_temp=, nanoamps_per_ppm=, coef=)]
 
 
 class PBay(Thread):
@@ -63,7 +55,7 @@ class PBay(Thread):
         self._raw = INIT_VALUES
         self._values = {}
         self._gases = gas_list
-        self._is_running = False
+        self._is_running = False  # TODO: check if threading module doesn't already have that kind of flag
 
         # initialize peripherals
         self._s = serial.Serial(port=serial_address, baudrate=115200, timeout=5)
@@ -96,6 +88,8 @@ class PBay(Thread):
 
             missing_values = [k for k, v in self._raw.items() if v is None]
             self._log.info("Waiting for _raw... Still waiting for: {}".format(missing_values))
+
+            time.sleep(.5)  # so it doesn't spin
 
         self._log.info("Got all the parameters. Starting.")
         self._calculate_values()
@@ -139,7 +133,7 @@ class PBay(Thread):
     def _calculate_values(self):
         for g in self._gases:
             deltaT = self._raw[g.temp_source]/100 - g.calib_temp
-            I_net = self._raw[g.name] - g.calib_temp * pow(math.e, deltaT/g.coef)
+            I_net = self._raw[g.name] - g.calib_temp * pow(math.e, deltaT/g.t_const)
             self._values[g.name] = I_net/g.picoamps_per_ppm
         self._log.debug("Calculated values" + str(self._values))
 
