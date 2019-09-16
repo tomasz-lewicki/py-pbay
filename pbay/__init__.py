@@ -1,3 +1,5 @@
+name = "py-pbay"
+
 import sys
 import time
 import math
@@ -116,8 +118,8 @@ class PBay(Thread):
         return li
 
     def _parse(self, data):
-        keyvalue_pairs = self._p.findall(data)
-        return keyvalue_pairs
+        keyvalue_list = self._p.findall(data)
+        return keyvalue_list
 
     def _update_state(self, keyvalue_pairs):
         for kv in keyvalue_pairs:
