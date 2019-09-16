@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="py-pbay",
-    version="0.0.1",
+    name="pbay",
+    version="1.0.1",
     author="Tomasz Lewicki",
     author_email="t.w.lewicki@gmail.com",
     description="A python driver for PBay board",
@@ -13,6 +13,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/tomek-l/py-pbay",
     packages=setuptools.find_packages(),
+    install_requires=[
+          'pyserial',
+      ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -20,3 +23,4 @@ setuptools.setup(
     ],
     python_requires='>=3.4',
 )
+

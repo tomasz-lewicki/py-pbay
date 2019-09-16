@@ -89,7 +89,7 @@ class PBay(Thread):
             self._update_state(kv)
 
             missing_values = [k for k, v in self._raw.items() if v is None]
-            self._log.info("Waiting for _raw... Still waiting for: {}".format(missing_values))
+            self._log.info("Waiting for all values... Still waiting for: {}".format(missing_values))
 
             time.sleep(.5)  # so it doesn't spin
 
