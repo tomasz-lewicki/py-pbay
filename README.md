@@ -1,7 +1,7 @@
 # py-pbay
 A python driver for SPEC Sensors PBay board
 
-# Getting started::
+# Getting started
 ## 1. Install
 ```
 pip3 install pbay
