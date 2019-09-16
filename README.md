@@ -2,9 +2,11 @@
 A python driver for SPEC Sensors PBay board
 
 # Getting started::
-1. Install
-```pip3 install pbay```
-2. Run examples
+## 1. Install
+```
+pip3 install pbay
+```
+## 2. Run examples
 
 To simply display values:
 ```bash
@@ -16,4 +18,5 @@ To log values to a csv file:
 python3 example_csv.py /dev/ttyUSB0
 ```
 
-3. Before use, be sure to override the values in examples with your own calibration values
+## 3. Calibration
+Before use, be sure to override the values in examples with your own calibration values
