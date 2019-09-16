@@ -2,9 +2,18 @@
 A python driver for SPEC Sensors PBay board
 
 # Getting started::
-1. Install pyserial
-```pip install pyserial```
-2. Connect Board & check the board's devpath - e.g. ```/dev/ttyUSB0```.
-3. Run example:
-```python3 example.py /dev/ttyUSB0```
+1. Install
+```pip3 install pbay```
+2. Run examples
 
+To simply display values:
+```bash
+python3 example.py /dev/ttyUSB0
+``` 
+
+To log values to a csv file:
+```bash
+python3 example_csv.py /dev/ttyUSB0
+```
+
+3. Before use, be sure to override the values in examples with your own calibration values
