@@ -18,5 +18,8 @@ To log values to a csv file:
 python3 example_csv.py /dev/ttyUSB0
 ```
 
+Your devpath for PBay can be different than ```/dev/ttyUSB0```.
+To check it, use ```dmesg``` command after connecting USB and examine the output.
+
 ## 3. Calibration
 Before use, be sure to override the values in examples with your own calibration values
